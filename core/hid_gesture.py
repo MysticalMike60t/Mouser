@@ -73,10 +73,11 @@ def _parse(raw):
 class HidGestureListener:
     """Background thread: diverts the gesture button and listens via HID++."""
 
-    def __init__(self, on_down=None, on_up=None,
+    def __init__(self, on_down=None, on_up=None, on_move=None,
                  on_connect=None, on_disconnect=None):
         self._on_down       = on_down
         self._on_up         = on_up
+        self._on_move       = on_move
         self._on_connect    = on_connect
         self._on_disconnect = on_disconnect
         self._dev       = None          # hid.device()
@@ -87,6 +88,7 @@ class HidGestureListener:
         self._dev_idx   = BT_DEV_IDX
         self._held      = False
         self._connected = False         # True while HID++ device is open
+        self._rawxy_enabled = False
         self._pending_dpi = None        # set by set_dpi(), applied in loop
         self._dpi_result  = None        # True/False after apply
 
@@ -179,7 +181,8 @@ class HidGestureListener:
                       f"for feat=0x{feat:02X} func={func}")
                 return None
 
-            if r_feat == feat and r_sw == MY_SW:
+            expected_funcs = {func, (func + 1) & 0x0F}
+            if r_feat == feat and r_sw == MY_SW and r_func in expected_funcs:
                 return msg
         return None
 
@@ -196,15 +199,24 @@ class HidGestureListener:
                 return p[0]
         return None
 
-    def _divert(self):
-        """Divert gesture button CID 0x00C3 so we get press/release
-        notifications instead of the device's default action."""
+    def _set_cid_reporting(self, flags):
         if self._feat_idx is None:
-            return False
+            return None
         hi = (CID_GESTURE >> 8) & 0xFF
         lo = CID_GESTURE & 0xFF
-        # flags: divert=1 (bit 0), dvalid=1 (bit 1) → 0x03
-        resp = self._request(self._feat_idx, 3, [hi, lo, 0x03])
+        return self._request(self._feat_idx, 3, [hi, lo, flags, 0x00, 0x00])
+
+    def _divert(self):
+        """Divert gesture button CID 0x00C3 and enable raw XY when supported."""
+        if self._feat_idx is None:
+            return False
+        resp = self._set_cid_reporting(0x33)
+        if resp is not None:
+            self._rawxy_enabled = True
+            print(f"[HidGesture] Divert CID 0x{CID_GESTURE:04X} with RawXY: OK")
+            return True
+        self._rawxy_enabled = False
+        resp = self._set_cid_reporting(0x03)
         ok = resp is not None
         print(f"[HidGesture] Divert CID 0x{CID_GESTURE:04X}: "
               f"{'OK' if ok else 'FAILED'}")
@@ -216,11 +228,13 @@ class HidGestureListener:
             return
         hi = (CID_GESTURE >> 8) & 0xFF
         lo = CID_GESTURE & 0xFF
+        flags = 0x22 if self._rawxy_enabled else 0x02
         try:
             self._tx(LONG_ID, self._feat_idx, 3,
-                     [hi, lo, 0x02])          # dvalid=1, divert=0
+                     [hi, lo, flags, 0x00, 0x00])
         except Exception:
             pass
+        self._rawxy_enabled = False
 
     # ── DPI control ───────────────────────────────────────────────
 
@@ -295,15 +309,36 @@ class HidGestureListener:
 
     # ── notification handling ─────────────────────────────────────
 
+    @staticmethod
+    def _decode_s16(hi, lo):
+        value = (hi << 8) | lo
+        if value & 0x8000:
+            value -= 0x10000
+        return value
+
     def _on_report(self, raw):
-        """Inspect an incoming HID++ report for a divertedButtonsEvent."""
+        """Inspect an incoming HID++ report for diverted button / raw XY events."""
         msg = _parse(raw)
         if msg is None:
             return
         _, feat, func, _sw, params = msg
 
-        # Only care about notifications from REPROG_CONTROLS_V4, event 0
-        if feat != self._feat_idx or func != 0:
+        if feat != self._feat_idx:
+            return
+
+        if func == 1:
+            if len(params) < 4 or not self._held:
+                return
+            dx = self._decode_s16(params[0], params[1])
+            dy = self._decode_s16(params[2], params[3])
+            if (dx or dy) and self._on_move:
+                try:
+                    self._on_move(dx, dy)
+                except Exception as e:
+                    print(f"[HidGesture] move callback error: {e}")
+            return
+
+        if func != 0:
             return
 
         # Params: sequential CID pairs terminated by 0x0000
@@ -425,6 +460,7 @@ class HidGestureListener:
             self._dev = None
             self._feat_idx = None
             self._held = False
+            self._rawxy_enabled = False
             if self._connected:
                 self._connected = False
                 if self._on_disconnect:

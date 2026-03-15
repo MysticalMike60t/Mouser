@@ -126,6 +126,29 @@ Item {
         return "none"
     }
 
+    function actionIndexForId(actionId) {
+        var actions = backend.allActions
+        for (var i = 0; i < actions.length; i++)
+            if (actions[i].id === actionId) return i
+        return 0
+    }
+
+    function gestureSummary() {
+        if (!backend.supportsGestureDirections)
+            return actionFor("gesture")
+
+        var hasSwipeAction =
+                actionFor_id("gesture_left") !== "none"
+                || actionFor_id("gesture_right") !== "none"
+                || actionFor_id("gesture_up") !== "none"
+                || actionFor_id("gesture_down") !== "none"
+
+        if (!hasSwipeAction)
+            return "Tap: " + actionFor("gesture")
+
+        return "Tap: " + actionFor("gesture") + " | Swipes configured"
+    }
+
     // ── Main two-column layout ────────────────────────────────
     Row {
         anchors.fill: parent
@@ -538,7 +561,7 @@ Item {
                             normX: 0.7; normY: 0.63
                             buttonKey: "gesture"
                             label: "Gesture button"
-                            sublabel: actionFor("gesture")
+                            sublabel: gestureSummary()
                             labelSide: "left"
                             labelOffX: -200; labelOffY: 60
                         }
@@ -632,6 +655,9 @@ Item {
                                     Text {
                                         text: selectedButton === "hscroll_left"
                                               ? "Configure separate actions for scroll left and right"
+                                              : selectedButton === "gesture"
+                                                && backend.supportsGestureDirections
+                                                ? "Configure tap behavior plus swipe actions for the gesture button"
                                               : "Select what happens when you use this button"
                                         font { family: Theme.fontFamily; pixelSize: 12 }
                                         color: Theme.textSecondary
@@ -695,12 +721,190 @@ Item {
                                 }
                             }
 
+                            Column {
+                                width: parent.width
+                                spacing: 14
+                                visible: selectedButton === "gesture"
+                                         && backend.supportsGestureDirections
+
+                                Text {
+                                    text: "TAP ACTION"
+                                    font { family: Theme.fontFamily; pixelSize: 11;
+                                           capitalization: Font.AllUppercase; letterSpacing: 1 }
+                                    color: Theme.textDim
+                                }
+
+                                ComboBox {
+                                    width: parent.width
+                                    model: backend.allActions
+                                    textRole: "label"
+                                    Material.accent: Theme.accent
+                                    font { family: Theme.fontFamily; pixelSize: 11 }
+                                    currentIndex: actionIndexForId(actionFor_id("gesture"))
+                                    onActivated: function(index) {
+                                        var aid = backend.allActions[index].id
+                                        backend.setProfileMapping(selectedProfile, "gesture", aid)
+                                        selectedActionId = aid
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: parent.width
+                                    height: 1
+                                    color: Theme.border
+                                }
+
+                                Row {
+                                    width: parent.width
+                                    spacing: 12
+
+                                    Text {
+                                        text: "Threshold"
+                                        font { family: Theme.fontFamily; pixelSize: 12; bold: true }
+                                        color: Theme.textPrimary
+                                    }
+
+                                    Text {
+                                        text: backend.gestureThreshold + " px"
+                                        font { family: Theme.fontFamily; pixelSize: 12 }
+                                        color: Theme.textSecondary
+                                    }
+                                }
+
+                                Slider {
+                                    width: parent.width
+                                    from: 20
+                                    to: 400
+                                    stepSize: 5
+                                    value: backend.gestureThreshold
+                                    Material.accent: Theme.accent
+                                    onMoved: backend.setGestureThreshold(value)
+                                }
+
+                                Text {
+                                    text: "SWIPE ACTIONS"
+                                    font { family: Theme.fontFamily; pixelSize: 11;
+                                           capitalization: Font.AllUppercase; letterSpacing: 1 }
+                                    color: Theme.textDim
+                                }
+
+                                RowLayout {
+                                    width: parent.width
+                                    spacing: 12
+
+                                    Text {
+                                        text: "Swipe left"
+                                        Layout.preferredWidth: 100
+                                        font { family: Theme.fontFamily; pixelSize: 12 }
+                                        color: Theme.textPrimary
+                                    }
+
+                                    ComboBox {
+                                        Layout.fillWidth: true
+                                        model: backend.allActions
+                                        textRole: "label"
+                                        Material.accent: Theme.accent
+                                        font { family: Theme.fontFamily; pixelSize: 11 }
+                                        currentIndex: actionIndexForId(actionFor_id("gesture_left"))
+                                        onActivated: function(index) {
+                                            backend.setProfileMapping(
+                                                selectedProfile,
+                                                "gesture_left",
+                                                backend.allActions[index].id)
+                                        }
+                                    }
+                                }
+
+                                RowLayout {
+                                    width: parent.width
+                                    spacing: 12
+
+                                    Text {
+                                        text: "Swipe right"
+                                        Layout.preferredWidth: 100
+                                        font { family: Theme.fontFamily; pixelSize: 12 }
+                                        color: Theme.textPrimary
+                                    }
+
+                                    ComboBox {
+                                        Layout.fillWidth: true
+                                        model: backend.allActions
+                                        textRole: "label"
+                                        Material.accent: Theme.accent
+                                        font { family: Theme.fontFamily; pixelSize: 11 }
+                                        currentIndex: actionIndexForId(actionFor_id("gesture_right"))
+                                        onActivated: function(index) {
+                                            backend.setProfileMapping(
+                                                selectedProfile,
+                                                "gesture_right",
+                                                backend.allActions[index].id)
+                                        }
+                                    }
+                                }
+
+                                RowLayout {
+                                    width: parent.width
+                                    spacing: 12
+
+                                    Text {
+                                        text: "Swipe up"
+                                        Layout.preferredWidth: 100
+                                        font { family: Theme.fontFamily; pixelSize: 12 }
+                                        color: Theme.textPrimary
+                                    }
+
+                                    ComboBox {
+                                        Layout.fillWidth: true
+                                        model: backend.allActions
+                                        textRole: "label"
+                                        Material.accent: Theme.accent
+                                        font { family: Theme.fontFamily; pixelSize: 11 }
+                                        currentIndex: actionIndexForId(actionFor_id("gesture_up"))
+                                        onActivated: function(index) {
+                                            backend.setProfileMapping(
+                                                selectedProfile,
+                                                "gesture_up",
+                                                backend.allActions[index].id)
+                                        }
+                                    }
+                                }
+
+                                RowLayout {
+                                    width: parent.width
+                                    spacing: 12
+
+                                    Text {
+                                        text: "Swipe down"
+                                        Layout.preferredWidth: 100
+                                        font { family: Theme.fontFamily; pixelSize: 12 }
+                                        color: Theme.textPrimary
+                                    }
+
+                                    ComboBox {
+                                        Layout.fillWidth: true
+                                        model: backend.allActions
+                                        textRole: "label"
+                                        Material.accent: Theme.accent
+                                        font { family: Theme.fontFamily; pixelSize: 11 }
+                                        currentIndex: actionIndexForId(actionFor_id("gesture_down"))
+                                        onActivated: function(index) {
+                                            backend.setProfileMapping(
+                                                selectedProfile,
+                                                "gesture_down",
+                                                backend.allActions[index].id)
+                                        }
+                                    }
+                                }
+                            }
+
                             // Single button: categorized chips
                             Column {
                                 width: parent.width
                                 spacing: 14
                                 visible: selectedButton !== ""
                                          && selectedButton !== "hscroll_left"
+                                         && !(selectedButton === "gesture"
+                                              && backend.supportsGestureDirections)
 
                                 Repeater {
                                     model: backend.actionCategories
@@ -739,6 +943,252 @@ Item {
                             }
 
                             Item { width: 1; height: 8 }
+                        }
+                    }
+
+                    Rectangle {
+                        width: parent.width - 56
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        height: debugCol.implicitHeight + 24
+                        radius: 14
+                        color: Theme.bgCard
+                        border.width: 1
+                        border.color: Theme.border
+
+                        Column {
+                            id: debugCol
+                            anchors.fill: parent
+                            anchors.margins: 16
+                            spacing: 12
+
+                            RowLayout {
+                                width: parent.width
+                                spacing: 12
+
+                                Column {
+                                    Layout.fillWidth: true
+                                    spacing: 3
+
+                                    Text {
+                                        text: "Debug Events"
+                                        font { family: Theme.fontFamily; pixelSize: 14; bold: true }
+                                        color: Theme.textPrimary
+                                    }
+
+                                    Text {
+                                        text: "Shows detected buttons, gestures, and mapped actions"
+                                        font { family: Theme.fontFamily; pixelSize: 11 }
+                                        color: Theme.textSecondary
+                                    }
+                                }
+
+                                Switch {
+                                    checked: backend.debugMode
+                                    text: checked ? "On" : "Off"
+                                    Material.accent: Theme.accent
+                                    onToggled: backend.setDebugMode(checked)
+                                }
+
+                                Switch {
+                                    checked: backend.recordMode
+                                    text: checked ? "Rec" : "Record"
+                                    Material.accent: "#e46f4e"
+                                    onToggled: backend.setRecordMode(checked)
+                                }
+
+                                Rectangle {
+                                    width: clearText.implicitWidth + 20
+                                    height: 28
+                                    radius: 8
+                                    color: clearMa.containsMouse
+                                           ? Qt.rgba(1, 1, 1, 0.08)
+                                           : Qt.rgba(1, 1, 1, 0.04)
+
+                                    Text {
+                                        id: clearText
+                                        anchors.centerIn: parent
+                                        text: "Clear"
+                                        font { family: Theme.fontFamily; pixelSize: 11; bold: true }
+                                        color: Theme.textPrimary
+                                    }
+
+                                    MouseArea {
+                                        id: clearMa
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: backend.clearDebugLog()
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: clearRecText.implicitWidth + 20
+                                    height: 28
+                                    radius: 8
+                                    color: clearRecMa.containsMouse
+                                           ? Qt.rgba(1, 1, 1, 0.08)
+                                           : Qt.rgba(1, 1, 1, 0.04)
+
+                                    Text {
+                                        id: clearRecText
+                                        anchors.centerIn: parent
+                                        text: "Clear Rec"
+                                        font { family: Theme.fontFamily; pixelSize: 11; bold: true }
+                                        color: Theme.textPrimary
+                                    }
+
+                                    MouseArea {
+                                        id: clearRecMa
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: backend.clearGestureRecords()
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                width: parent.width
+                                radius: 10
+                                color: Qt.rgba(1, 1, 1, 0.03)
+                                border.width: 1
+                                border.color: Theme.border
+                                height: monitorCol.implicitHeight + 20
+
+                                Column {
+                                    id: monitorCol
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    spacing: 8
+
+                                    Text {
+                                        text: "Live Gesture Monitor"
+                                        font { family: Theme.fontFamily; pixelSize: 11; bold: true }
+                                        color: Theme.textPrimary
+                                    }
+
+                                    Row {
+                                        spacing: 8
+
+                                        Rectangle {
+                                            width: activeText.implicitWidth + 16
+                                            height: 24
+                                            radius: 12
+                                            color: backend.gestureActive
+                                                   ? Qt.rgba(0.89, 0.45, 0.25, 0.18)
+                                                   : Qt.rgba(1, 1, 1, 0.05)
+
+                                            Text {
+                                                id: activeText
+                                                anchors.centerIn: parent
+                                                text: backend.gestureActive ? "Held" : "Idle"
+                                                font { family: Theme.fontFamily; pixelSize: 11; bold: true }
+                                                color: backend.gestureActive ? "#f39c6b" : Theme.textSecondary
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            width: moveText.implicitWidth + 16
+                                            height: 24
+                                            radius: 12
+                                            color: backend.gestureMoveSeen
+                                                   ? Qt.rgba(0, 0.83, 0.67, 0.12)
+                                                   : Qt.rgba(1, 1, 1, 0.05)
+
+                                            Text {
+                                                id: moveText
+                                                anchors.centerIn: parent
+                                                text: backend.gestureMoveSeen ? "Move Seen" : "No Move"
+                                                font { family: Theme.fontFamily; pixelSize: 11; bold: true }
+                                                color: backend.gestureMoveSeen ? Theme.accent : Theme.textSecondary
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        text: "Source: "
+                                              + (backend.gestureMoveSource ? backend.gestureMoveSource : "n/a")
+                                              + " | dx: " + backend.gestureMoveDx
+                                              + " | dy: " + backend.gestureMoveDy
+                                        font { family: "Menlo"; pixelSize: 11 }
+                                        color: Theme.textSecondary
+                                    }
+
+                                    Text {
+                                        text: backend.gestureStatus
+                                        font { family: Theme.fontFamily; pixelSize: 11 }
+                                        color: Theme.textPrimary
+                                        wrapMode: Text.Wrap
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                width: parent.width
+                                height: 160
+                                radius: 10
+                                color: Qt.rgba(0, 0, 0, 0.18)
+                                border.width: 1
+                                border.color: Theme.border
+
+                                ScrollView {
+                                    anchors.fill: parent
+                                    anchors.margins: 1
+                                    clip: true
+
+                                    TextArea {
+                                        id: debugLogArea
+                                        text: backend.debugLog.length
+                                              ? backend.debugLog
+                                              : "Turn on debug mode, then press buttons or use the gesture button."
+                                        readOnly: true
+                                        wrapMode: TextEdit.NoWrap
+                                        selectByMouse: true
+                                        color: backend.debugLog.length
+                                               ? Theme.textPrimary
+                                               : Theme.textSecondary
+                                        font.pixelSize: 11
+                                        font.family: "Menlo"
+                                        background: null
+                                        padding: 10
+
+                                        onTextChanged: {
+                                            cursorPosition = length
+                                        }
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                width: parent.width
+                                height: 180
+                                radius: 10
+                                color: Qt.rgba(0, 0, 0, 0.18)
+                                border.width: 1
+                                border.color: Theme.border
+
+                                ScrollView {
+                                    anchors.fill: parent
+                                    anchors.margins: 1
+                                    clip: true
+
+                                    TextArea {
+                                        text: backend.gestureRecords.length
+                                              ? backend.gestureRecords
+                                              : "Turn on Record and perform a few gesture attempts."
+                                        readOnly: true
+                                        wrapMode: TextEdit.Wrap
+                                        selectByMouse: true
+                                        color: backend.gestureRecords.length
+                                               ? Theme.textPrimary
+                                               : Theme.textSecondary
+                                        font.pixelSize: 11
+                                        font.family: "Menlo"
+                                        background: null
+                                        padding: 10
+                                    }
+                                }
+                            }
                         }
                     }
 
