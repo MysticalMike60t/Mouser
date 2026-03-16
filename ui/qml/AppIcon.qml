@@ -1,27 +1,25 @@
 import QtQuick
-import QtQuick.Effects
-import QtQuick.VectorImage
 
-Item {
+Image {
     id: icon
 
     property string name: ""
     property color iconColor: "#000000"
+
+    function iconSource() {
+        var resolvedColor = encodeURIComponent("" + iconColor)
+        var resolvedSize = Math.max(12, Math.round(Math.max(width, height)))
+        return "image://appicons/" + name + "?color=" + resolvedColor + "&size=" + resolvedSize
+    }
+
     width: 20
     height: 20
-
-    VectorImage {
-        id: vectorSource
-        anchors.fill: parent
-        source: name ? "file:///" + applicationDirPath + "/images/icons/" + name + ".svg" : ""
-        preferredRendererType: VectorImage.CurveRenderer
-        visible: false
-    }
-
-    MultiEffect {
-        anchors.fill: parent
-        source: vectorSource
-        colorization: 1.0
-        colorizationColor: icon.iconColor
-    }
+    source: name ? iconSource() : ""
+    sourceSize.width: width
+    sourceSize.height: height
+    fillMode: Image.PreserveAspectFit
+    smooth: true
+    mipmap: true
+    asynchronous: true
+    cache: true
 }

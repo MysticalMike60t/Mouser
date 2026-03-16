@@ -12,6 +12,7 @@ _t0 = _time.perf_counter()          # ◄ startup clock
 import sys
 import os
 import signal
+from urllib.parse import parse_qs
 
 # Ensure project root on path — works for both normal Python and PyInstaller
 if getattr(sys, "frozen", False):
@@ -30,6 +31,7 @@ from PySide6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap
 from PySide6.QtCore import QObject, Property, QCoreApplication, QRectF, Qt, QUrl, Signal
 from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQuick import QQuickImageProvider
 from PySide6.QtSvg import QSvgRenderer
 _t2 = _time.perf_counter()
 
@@ -154,6 +156,31 @@ class UiState(QObject):
         return self._font_family
 
 
+class AppIconProvider(QQuickImageProvider):
+    def __init__(self, root_dir: str):
+        super().__init__(QQuickImageProvider.ImageType.Pixmap)
+        self._icon_dir = os.path.join(root_dir, "images", "icons")
+
+    def requestPixmap(self, icon_id, size, requested_size):
+        name, _, query_string = icon_id.partition("?")
+        params = parse_qs(query_string)
+        color = QColor(params.get("color", ["#000000"])[0])
+        logical_size = requested_size.width() if requested_size.width() > 0 else 24
+        if "size" in params:
+            try:
+                logical_size = max(12, int(params["size"][0]))
+            except ValueError:
+                logical_size = max(12, logical_size)
+
+        icon_name = name if name.endswith(".svg") else f"{name}.svg"
+        icon_path = os.path.join(self._icon_dir, icon_name)
+        pixmap = _render_svg_pixmap(icon_path, color, logical_size)
+        if size is not None:
+            size.setWidth(logical_size)
+            size.setHeight(logical_size)
+        return pixmap
+
+
 def main():
     _print_startup_times()
     _t5 = _time.perf_counter()
@@ -189,6 +216,7 @@ def main():
 
     # ── QML Engine ─────────────────────────────────────────────
     qml_engine = QQmlApplicationEngine()
+    qml_engine.addImageProvider("appicons", AppIconProvider(ROOT))
     qml_engine.rootContext().setContextProperty("backend", backend)
     qml_engine.rootContext().setContextProperty("uiState", ui_state)
     qml_engine.rootContext().setContextProperty(
