@@ -46,7 +46,5 @@ class GestureCandidateSelectionTests(unittest.TestCase):
             listener._choose_gesture_candidates([]),
             list(hid_gesture.DEFAULT_GESTURE_CIDS),
         )
-
-
 if __name__ == "__main__":
     unittest.main()
