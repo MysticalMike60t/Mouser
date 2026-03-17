@@ -13,7 +13,7 @@ from core.config import (
     PROFILE_BUTTON_NAMES, set_mapping, create_profile, delete_profile,
     KNOWN_APPS, get_icon_for_exe,
 )
-from core.device_layouts import get_device_layout
+from core.device_layouts import get_device_layout, get_manual_layout_choices
 from core.key_simulator import ACTIONS
 
 
@@ -54,6 +54,8 @@ class Backend(QObject):
         self._cfg = load_config()
         self._mouse_connected = False
         self._device_display_name = "Logitech mouse"
+        self._connected_device_key = ""
+        self._device_layout_override_key = ""
         self._device_layout = get_device_layout("mx_master")
         self._battery_level = -1
         self._debug_lines = []
@@ -200,6 +202,10 @@ class Backend(QObject):
     def deviceDisplayName(self):
         return self._device_display_name
 
+    @Property(str, notify=deviceInfoChanged)
+    def connectedDeviceKey(self):
+        return self._connected_device_key
+
     @Property(str, notify=deviceLayoutChanged)
     def deviceImageAsset(self):
         return self._device_layout.get("image_asset", "mouse.png")
@@ -223,6 +229,18 @@ class Backend(QObject):
     @Property(list, notify=deviceLayoutChanged)
     def deviceHotspots(self):
         return list(self._device_layout.get("hotspots", []))
+
+    @Property(list, constant=True)
+    def manualLayoutChoices(self):
+        return get_manual_layout_choices()
+
+    @Property(str, notify=deviceLayoutChanged)
+    def deviceLayoutOverrideKey(self):
+        return self._device_layout_override_key
+
+    @Property(str, notify=deviceLayoutChanged)
+    def effectiveDeviceLayoutKey(self):
+        return self._device_layout.get("key", "generic_mouse")
 
     @Property(int, notify=batteryLevelChanged)
     def batteryLevel(self):
@@ -453,6 +471,35 @@ class Backend(QObject):
     def actionLabelFor(self, actionId):
         return _action_label(actionId)
 
+    @Slot(str)
+    def setDeviceLayoutOverride(self, layoutKey):
+        normalized = (layoutKey or "").strip()
+        device_key = self._connected_device_key
+        if not device_key:
+            self.statusMessage.emit("Connect a device first")
+            return
+        valid_choices = {choice["key"] for choice in get_manual_layout_choices()}
+        if normalized not in valid_choices:
+            self.statusMessage.emit("Unknown layout option")
+            return
+
+        overrides = self._cfg.setdefault("settings", {}).setdefault(
+            "device_layout_overrides",
+            {},
+        )
+        if normalized:
+            overrides[device_key] = normalized
+        else:
+            overrides.pop(device_key, None)
+        save_config(self._cfg)
+
+        device = getattr(self._engine, "connected_device", None) if self._engine else None
+        self._apply_device_layout(device)
+        if normalized:
+            self.statusMessage.emit("Experimental layout applied")
+        else:
+            self.statusMessage.emit("Layout reset to auto-detect")
+
     # ── Engine thread callbacks (cross-thread safe) ────────────
 
     def _onEngineProfileSwitch(self, profile_name):
@@ -511,15 +558,30 @@ class Backend(QObject):
         )
 
     def _apply_device_layout(self, device):
+        device_key = getattr(device, "key", "") or ""
         display_name = getattr(device, "display_name", "") or "Logitech mouse"
+        info_changed = False
         if display_name != self._device_display_name:
             self._device_display_name = display_name
+            info_changed = True
+        if device_key != self._connected_device_key:
+            self._connected_device_key = device_key
+            info_changed = True
+        if info_changed:
             self.deviceInfoChanged.emit()
 
-        layout_key = getattr(device, "ui_layout", None) or "mx_master"
+        overrides = self._cfg.get("settings", {}).get("device_layout_overrides", {})
+        override_key = overrides.get(device_key, "") if device_key else ""
+        layout_key = override_key or getattr(device, "ui_layout", None) or "mx_master"
         layout = get_device_layout(layout_key)
+        layout_changed = False
+        if override_key != self._device_layout_override_key:
+            self._device_layout_override_key = override_key
+            layout_changed = True
         if layout != self._device_layout:
             self._device_layout = layout
+            layout_changed = True
+        if layout_changed:
             self.deviceLayoutChanged.emit()
 
     @Slot(int)

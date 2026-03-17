@@ -200,6 +200,15 @@ Item {
         return false
     }
 
+    function manualLayoutChoiceIndex(layoutKey) {
+        var choices = backend.manualLayoutChoices
+        for (var i = 0; i < choices.length; i++) {
+            if (choices[i].key === layoutKey)
+                return i
+        }
+        return 0
+    }
+
     Connections {
         target: backend
         function onDeviceLayoutChanged() {
@@ -673,6 +682,40 @@ Item {
                                     wrapMode: Text.WordWrap
                                     font { family: uiState.fontFamily; pixelSize: 12 }
                                     color: theme.textSecondary
+                                }
+
+                                Rectangle {
+                                    width: parent.width
+                                    height: 1
+                                    color: theme.border
+                                }
+
+                                Text {
+                                    text: "Try another supported map"
+                                    font { family: uiState.fontFamily; pixelSize: 12; bold: true }
+                                    color: theme.textPrimary
+                                }
+
+                                Text {
+                                    text: "This is experimental. If the chosen map is close enough, you can still edit actions and see whether the controls line up on your device."
+                                    wrapMode: Text.WordWrap
+                                    font { family: uiState.fontFamily; pixelSize: 11 }
+                                    color: theme.textSecondary
+                                }
+
+                                ComboBox {
+                                    id: layoutOverrideCombo
+                                    width: parent.width
+                                    model: backend.manualLayoutChoices
+                                    textRole: "label"
+                                    Material.accent: theme.accent
+                                    font { family: uiState.fontFamily; pixelSize: 11 }
+                                    currentIndex: manualLayoutChoiceIndex(backend.deviceLayoutOverrideKey)
+                                    onActivated: function(index) {
+                                        backend.setDeviceLayoutOverride(
+                                            backend.manualLayoutChoices[index].key
+                                        )
+                                    }
                                 }
                             }
                         }
