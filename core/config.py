@@ -6,6 +6,7 @@ Supports per-application profiles (for future use).
 import json
 import os
 import sys
+from core import app_catalog
 
 CONFIG_DIR = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "Mouser")
 if sys.platform == "darwin":
@@ -197,11 +198,21 @@ def delete_profile(cfg, name):
     return cfg
 
 
+def resolve_app_for_config(spec: str):
+    """Resolve an app identifier/path into a catalog entry with aliases."""
+    return app_catalog.resolve_app_spec(spec)
+
+
 def get_profile_for_app(cfg, exe_name):
     """Return the profile name that matches the given executable, or 'default'."""
+    if not exe_name:
+        return "default"
+    entry = resolve_app_for_config(exe_name)
+    aliases = {a.lower() for a in ([entry["id"]] + entry.get("aliases", []))} if entry else {exe_name.lower()}
     for pname, pdata in cfg.get("profiles", {}).items():
-        if exe_name and exe_name.lower() in [a.lower() for a in pdata.get("apps", [])]:
-            return pname
+        for app in pdata.get("apps", []):
+            if app.lower() in aliases:
+                return pname
     return "default"
 
 
