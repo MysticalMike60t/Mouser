@@ -14,7 +14,7 @@ No telemetry. No cloud. No Logitech account required.
 
 ## Features
 
-- **macOS support** — **full macOS compatibility added thanks to [andrew-sz](https://github.com/andrew-sz)**, using CGEventTap for mouse hooking, Quartz CGEvent for key simulation, and NSWorkspace for app detection. See [macOS Setup Guide](readme_mac_osx.md) for details.
+- **macOS support** — full macOS compatibility using CGEventTap for mouse hooking, Quartz CGEvent for key simulation, and NSWorkspace for app detection. See [macOS Setup Guide](readme_mac_osx.md) for details.
 - **Remap supported programmable controls** — MX Master-family layouts expose middle click, gesture button, back, forward, and horizontal scroll actions
 - **Per-application profiles** — automatically switch button mappings when you switch apps (e.g., different bindings for Chrome vs. VS Code)
 - **22 built-in actions** across navigation, browser, editing, and media categories
@@ -74,33 +74,35 @@ _The UI is now device-aware. MX Master-family mice get the interactive diagram; 
 
 > **No install required.** Just download, extract, and double-click.
 
+<p align="center">
+  <a href="https://github.com/TomBadash/Mouser/releases/latest">
+    <img src="https://img.shields.io/badge/Download-Mouser.zip-00d4aa?style=for-the-badge&logo=windows" alt="Download" />
+  </a>
+  <img src="https://img.shields.io/github/downloads/TomBadash/Mouser/total?style=for-the-badge&color=00d4aa&label=Total%20Downloads" alt="Downloads" />
+</p>
+
 ### Steps
 
-1. **Download** → [**Mouser.zip**](https://github.com/TomBadash/Mouser/releases/latest/download/Mouser.zip) (45 MB)
-2. **Extract** the zip to any folder (Desktop, Documents, wherever you like)
-3. **Run** `Mouser.exe`
+1. Go to the [**latest release page**](https://github.com/TomBadash/Mouser/releases/latest)
+2. Click **Mouser.zip** to download it
+3. **Extract** the zip to any folder (Desktop, Documents, wherever you like)
+4. **Run** `Mouser.exe`
 
-That's it — the app will open and start remapping your mouse buttons immediately.
+That's it. The app will open and start remapping your mouse buttons immediately.
 
 ### What to expect
 
 - The **settings window** opens showing the current device-aware mouse page
 - A **system tray icon** appears near the clock (bottom-right)
 - Button remapping is **active immediately**
-- Closing the window **doesn't quit** the app — it keeps running in the tray
-- To fully quit: right-click the tray icon → **Quit Mouser**
+- Closing the window does not quit the app — it keeps running in the tray
+- To fully quit: right-click the tray icon and select **Quit Mouser**
 
 ### First-time notes
 
-- **Windows SmartScreen** may show a warning the first time → click **More info → Run anyway**
-- **Logitech Options+** must not be running (it conflicts with HID++ access)
+- **Windows SmartScreen** may show a warning the first time — click **More info** then **Run anyway**
+- **Logitech Options+** must not be running (it conflicts with HID++ access and will cause Mouser to malfunction or crash)
 - Config is saved automatically to `%APPDATA%\Mouser`
-
-<p align="center">
-  <a href="https://github.com/TomBadash/Mouser/releases/latest/download/Mouser.zip">
-    <img src="https://img.shields.io/badge/Download-Mouser.zip-00d4aa?style=for-the-badge&logo=windows" alt="Download" />
-  </a>
-</p>
 
 ---
 
@@ -361,7 +363,7 @@ The app has two pages accessible from a slim sidebar:
 - [ ] **Per-app profile auto-creation** — detect new apps and prompt to create a profile
 - [ ] **Export/import config** — share configurations between machines
 - [ ] **Tray icon badge** — show active profile name in tray tooltip
-- [x] **macOS support** — added via CGEventTap, Quartz CGEvent, and NSWorkspace (thanks [@andrew-sz](https://github.com/andrew-sz))
+- [x] **macOS support** — added via CGEventTap, Quartz CGEvent, and NSWorkspace
 - [ ] **Linux support** — investigate `libevdev` / `evdev` hooks
 - [ ] **Plugin system** — allow third-party action providers
 
