@@ -1,5 +1,6 @@
 import copy
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from core.config import DEFAULT_CONFIG
@@ -8,6 +9,40 @@ try:
     from ui.backend import Backend
 except ModuleNotFoundError:
     Backend = None
+
+
+class _FakeEngine:
+    def __init__(self, device_connected=False, connected_device=None):
+        self.device_connected = device_connected
+        self.connected_device = connected_device
+        self.profile_callback = None
+        self.dpi_callback = None
+        self.connection_callback = None
+        self.battery_callback = None
+        self.debug_callback = None
+        self.gesture_callback = None
+        self.debug_enabled = None
+
+    def set_profile_change_callback(self, cb):
+        self.profile_callback = cb
+
+    def set_dpi_read_callback(self, cb):
+        self.dpi_callback = cb
+
+    def set_connection_change_callback(self, cb):
+        self.connection_callback = cb
+
+    def set_battery_callback(self, cb):
+        self.battery_callback = cb
+
+    def set_debug_callback(self, cb):
+        self.debug_callback = cb
+
+    def set_gesture_event_callback(self, cb):
+        self.gesture_callback = cb
+
+    def set_debug_enabled(self, enabled):
+        self.debug_enabled = enabled
 
 
 @unittest.skipIf(Backend is None, "PySide6 not installed in test environment")
@@ -42,6 +77,37 @@ class BackendDeviceLayoutTests(unittest.TestCase):
 
         overrides = backend._cfg.get("settings", {}).get("device_layout_overrides", {})
         self.assertEqual(overrides, {})
+
+    def test_disconnect_clears_stale_linux_device_identity_and_layout(self):
+        device = SimpleNamespace(
+            key="mx_master_3",
+            display_name="MX Master 3S",
+            dpi_min=200,
+            dpi_max=8000,
+            ui_layout="mx_master",
+        )
+
+        def fake_layout(key):
+            return {"key": key, "interactive": key != "generic_mouse"}
+
+        with (
+            patch("ui.backend.load_config", return_value=copy.deepcopy(DEFAULT_CONFIG)),
+            patch("ui.backend.save_config"),
+            patch("ui.backend.supports_login_startup", return_value=False),
+            patch("ui.backend.get_device_layout", side_effect=fake_layout),
+        ):
+            backend = Backend(engine=_FakeEngine(device_connected=True, connected_device=device))
+            self.assertTrue(backend.mouseConnected)
+            self.assertEqual(backend.connectedDeviceKey, "mx_master_3")
+            self.assertEqual(backend.effectiveDeviceLayoutKey, "mx_master")
+            backend._battery_level = 42
+
+            backend._handleConnectionChange(False)
+
+        self.assertFalse(backend.mouseConnected)
+        self.assertEqual(backend.connectedDeviceKey, "")
+        self.assertEqual(backend.effectiveDeviceLayoutKey, "generic_mouse")
+        self.assertEqual(backend.batteryLevel, -1)
 
     def test_linux_reports_gesture_direction_support(self):
         backend = self._make_backend()

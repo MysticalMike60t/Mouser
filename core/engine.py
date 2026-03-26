@@ -46,6 +46,7 @@ class Engine:
             self.cfg.get("settings", {}).get("debug_mode", False)
         )
         self._battery_poll_stop = threading.Event()
+        self._battery_poll_thread = None          # track the poller thread
         self._lock = threading.Lock()
         self.hook.set_debug_callback(self._emit_debug)
         self.hook.set_gesture_callback(self._emit_gesture_event)
@@ -255,6 +256,9 @@ class Engine:
 
     def _on_connection_change(self, connected):
         self._battery_poll_stop.set()
+        if self._battery_poll_thread is not None:
+            self._battery_poll_thread.join(timeout=5)
+            self._battery_poll_thread = None
         if self._connection_change_cb:
             try:
                 self._connection_change_cb(connected)
@@ -262,20 +266,19 @@ class Engine:
                 pass
         if connected:
             self._battery_poll_stop = threading.Event()
-            threading.Thread(
+            self._battery_poll_thread = threading.Thread(
                 target=self._battery_poll_loop,
                 args=(self._battery_poll_stop,),
                 daemon=True,
                 name="BatteryPoll",
-            ).start()
+            )
+            self._battery_poll_thread.start()
 
     def _battery_poll_loop(self, stop_event):
         """Read battery on connect and refresh it periodically until disconnected."""
-        if stop_event.wait(1):
-            return
         while not stop_event.is_set():
             hg = self.hook._hid_gesture
-            if hg:
+            if hg and hg.connected_device is not None:
                 level = hg.read_battery()
                 if stop_event.is_set():
                     return
@@ -284,7 +287,10 @@ class Engine:
                         self._battery_read_cb(level)
                     except Exception:
                         pass
-            if stop_event.wait(300):
+                if stop_event.wait(300):
+                    return
+                continue
+            if stop_event.wait(1):
                 return
 
     def set_battery_callback(self, cb):
@@ -394,5 +400,8 @@ class Engine:
 
     def stop(self):
         self._battery_poll_stop.set()
+        if self._battery_poll_thread is not None:
+            self._battery_poll_thread.join(timeout=5)
+            self._battery_poll_thread = None
         self._app_detector.stop()
         self.hook.stop()

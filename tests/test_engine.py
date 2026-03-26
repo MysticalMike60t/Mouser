@@ -139,6 +139,16 @@ class EngineHorizontalScrollTests(unittest.TestCase):
 
         self.assertEqual(seen, [True])
 
+    def test_connection_callback_prefers_device_connected_flag_over_stale_identity(self):
+        engine = self._make_engine()
+        engine.hook.device_connected = False
+        engine.hook.connected_device = SimpleNamespace(name="MX Master 3S")
+
+        seen = []
+        engine.set_connection_change_callback(seen.append)
+
+        self.assertEqual(seen, [False])
+
     def test_start_applies_saved_dpi_without_reading_device_dpi(self):
         engine = self._make_engine()
         engine.hook._hid_gesture = SimpleNamespace(

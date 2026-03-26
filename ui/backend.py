@@ -8,7 +8,7 @@ import re
 import sys
 import time
 
-from PySide6.QtCore import QObject, Property, Signal, Slot, Qt
+from PySide6.QtCore import QObject, Property, QTimer, Signal, Slot, Qt
 
 from core.accessibility import is_process_trusted
 from core.config import (
@@ -18,7 +18,12 @@ from core.config import (
 )
 from core import app_catalog
 from core.device_layouts import get_device_layout, get_manual_layout_choices
-from core.logi_devices import DEFAULT_DPI_MAX, DEFAULT_DPI_MIN, clamp_dpi
+from core.logi_devices import (
+    DEFAULT_DPI_MAX,
+    DEFAULT_DPI_MIN,
+    build_evdev_connected_device_info,
+    clamp_dpi,
+)
 from core.key_simulator import ACTIONS, custom_action_label, valid_custom_key_names
 from core.startup import (
     apply_login_startup,
@@ -73,6 +78,7 @@ class Backend(QObject):
         self._device_layout = get_device_layout("generic_mouse")
         self._device_dpi_min = DEFAULT_DPI_MIN
         self._device_dpi_max = DEFAULT_DPI_MAX
+        self._connected_device_source = ""
         self._battery_level = -1
         self._debug_lines = []
         self._debug_events_enabled = bool(
@@ -87,6 +93,8 @@ class Backend(QObject):
         self._gesture_move_dy = 0
         self._gesture_status = "Idle"
         self._current_attempt = None
+        self._connected_device_refresh_pending = False
+        self._connected_device_refresh_attempts = 0
 
         # Cross-thread signal connections
         self._profileSwitchRequest.connect(
@@ -120,10 +128,7 @@ class Backend(QObject):
             sync_login_startup_from_config(self.startAtLogin)
         else:
             self._cfg.setdefault("settings", {})["start_at_login"] = False
-        self._apply_device_layout(
-            getattr(engine, "connected_device", None)
-            if engine and self._mouse_connected else None
-        )
+        self._sync_connected_device_info()
 
     # ── Properties ─────────────────────────────────────────────
 
@@ -485,7 +490,7 @@ class Backend(QObject):
 
     @Slot(int)
     def setDpi(self, value):
-        device = getattr(self._engine, "connected_device", None) if self._engine else None
+        device = self._resolved_connected_device()
         dpi = clamp_dpi(value, device)
         self._cfg.setdefault("settings", {})["dpi"] = dpi
         save_config(self._cfg)
@@ -750,12 +755,15 @@ class Backend(QObject):
     def _handleConnectionChange(self, connected):
         """Runs on Qt main thread."""
         self._mouse_connected = connected
-        device = getattr(self._engine, "connected_device", None) if self._engine else None
+        self._connected_device_refresh_attempts = 0
+        device = None
         if connected:
-            self._apply_device_layout(device)
+            self._sync_connected_device_info()
+            device = self._resolved_connected_device()
         else:
             self._apply_device_layout(None)
-        if not connected and self._battery_level != -1:
+        device_source = getattr(device, "source", "") if device is not None else ""
+        if (not connected or device_source == "evdev") and self._battery_level != -1:
             self._battery_level = -1
             self.batteryLevelChanged.emit()
         self.mouseConnectedChanged.emit()
@@ -763,9 +771,72 @@ class Backend(QObject):
             f"Mouse {'connected' if connected else 'disconnected'}"
         )
 
+    def _resolved_connected_device(self):
+        device = getattr(self._engine, "connected_device", None) if self._engine else None
+        if device is not None:
+            return device
+        if sys.platform != "linux" or not self._engine:
+            return None
+        hook = getattr(self._engine, "hook", None)
+        hook_connected = bool(
+            getattr(self._engine, "device_connected", False)
+            or getattr(hook, "evdev_ready", False)
+            or getattr(hook, "_device_connected", False)
+        )
+        if not (self._mouse_connected or hook_connected):
+            return None
+        evdev_device = getattr(hook, "_evdev_device", None) if hook else None
+        if not evdev_device:
+            return None
+        info = getattr(evdev_device, "info", None)
+        return build_evdev_connected_device_info(
+            product_id=getattr(info, "product", None) if info else None,
+            product_name=getattr(evdev_device, "name", None),
+            transport="evdev",
+            source="evdev",
+        )
+
+    def _sync_connected_device_info(self):
+        device = self._resolved_connected_device()
+        self._apply_device_layout(device)
+        if self._should_retry_device_info(device):
+            self._schedule_connected_device_info_refresh()
+
+    def _should_retry_device_info(self, device):
+        if sys.platform != "linux" or not self._engine:
+            return False
+        hook = getattr(self._engine, "hook", None)
+        hook_connected = bool(
+            self._mouse_connected
+            or getattr(self._engine, "device_connected", False)
+            or getattr(hook, "evdev_ready", False)
+            or getattr(hook, "_device_connected", False)
+        )
+        if not hook_connected:
+            return False
+        if getattr(self._engine, "connected_device", None) is not None:
+            return False
+        if getattr(device, "source", "") != "evdev":
+            return False
+        return self._connected_device_refresh_attempts < 20
+
+    def _schedule_connected_device_info_refresh(self):
+        if self._connected_device_refresh_pending:
+            return
+        self._connected_device_refresh_pending = True
+        QTimer.singleShot(250, self._refresh_connected_device_info)
+
+    def _refresh_connected_device_info(self):
+        self._connected_device_refresh_pending = False
+        if not self._mouse_connected:
+            return
+        self._connected_device_refresh_attempts += 1
+        self._sync_connected_device_info()
+
     def _apply_device_layout(self, device):
         device_key = getattr(device, "key", "") or ""
         display_name = getattr(device, "display_name", "") or "Logitech mouse"
+        source = getattr(device, "source", "") or ""
         dpi_min = getattr(device, "dpi_min", DEFAULT_DPI_MIN) or DEFAULT_DPI_MIN
         dpi_max = getattr(device, "dpi_max", DEFAULT_DPI_MAX) or DEFAULT_DPI_MAX
         info_changed = False
@@ -774,6 +845,9 @@ class Backend(QObject):
             info_changed = True
         if device_key != self._connected_device_key:
             self._connected_device_key = device_key
+            info_changed = True
+        if source != self._connected_device_source:
+            self._connected_device_source = source
             info_changed = True
         if dpi_min != self._device_dpi_min:
             self._device_dpi_min = dpi_min
