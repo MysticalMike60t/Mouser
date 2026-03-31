@@ -984,6 +984,7 @@ class HidGestureListener:
                 return self._dpi_result
             time.sleep(0.1)
         print("[HidGesture] DPI read timed out")
+        self._pending_dpi = None
         return None
 
     def _apply_pending_read_dpi(self):
@@ -1095,6 +1096,7 @@ class HidGestureListener:
                 return self._smart_shift_result
             time.sleep(0.1)
         print("[HidGesture] Smart Shift read timed out")
+        self._pending_smart_shift = None   # prevent stale processing
         return None
 
     def _apply_pending_read_smart_shift(self):
@@ -1138,6 +1140,7 @@ class HidGestureListener:
                 return self._battery_result
             time.sleep(0.1)
         print("[HidGesture] Battery read timed out")
+        self._pending_battery = None
         return None
 
     def _apply_pending_read_battery(self):
@@ -1186,6 +1189,32 @@ class HidGestureListener:
         if value & 0x8000:
             value -= 0x10000
         return value
+
+    def _force_release_stale_holds(self):
+        """Synthesize UP events for any buttons stuck in the held state.
+
+        Called from the main loop when consecutive _rx() calls return no data,
+        indicating the device may have stalled or gone to sleep while a
+        button was physically held.
+        """
+        if self._held:
+            self._held = False
+            print("[HidGesture] Gesture force-released (stale hold)")
+            if self._on_up:
+                try:
+                    self._on_up()
+                except Exception:
+                    pass
+        for info in self._extra_diverts.values():
+            if info["held"]:
+                info["held"] = False
+                cb = info.get("on_up")
+                if cb:
+                    print("[HidGesture] Extra button force-released (stale hold)")
+                    try:
+                        cb()
+                    except Exception:
+                        pass
 
     def _on_report(self, raw):
         """Inspect an incoming HID++ report for diverted button / raw XY events."""
@@ -1440,6 +1469,8 @@ class HidGestureListener:
                 except Exception:
                     pass
             print("[HidGesture] Listening for gesture events…")
+            _no_data_count = 0          # consecutive _rx() returning None
+            _STALE_HOLD_LIMIT = 3       # force-release held buttons after this many empty reads (~3 s)
             try:
                 while self._running:
                     if self._reconnect_requested:
@@ -1457,7 +1488,14 @@ class HidGestureListener:
                         self._apply_pending_read_battery()
                     raw = self._rx(1000)
                     if raw:
+                        _no_data_count = 0
                         self._on_report(raw)
+                    else:
+                        _no_data_count += 1
+                        # Force-release buttons stuck in held state when the
+                        # device stops sending reports (firmware stall / sleep).
+                        if _no_data_count >= _STALE_HOLD_LIMIT:
+                            self._force_release_stale_holds()
             except Exception as e:
                 print(f"[HidGesture] read error: {e}")
 
@@ -1476,9 +1514,24 @@ class HidGestureListener:
             self._battery_feature_id = None
             self._pending_battery = None
             self._last_logged_battery = None
-            self._held = False
+            if self._held:
+                self._held = False
+                print("[HidGesture] Gesture force-released on disconnect")
+                if self._on_up:
+                    try:
+                        self._on_up()
+                    except Exception:
+                        pass
             for info in self._extra_diverts.values():
-                info["held"] = False
+                if info["held"]:
+                    info["held"] = False
+                    cb = info.get("on_up")
+                    if cb:
+                        print("[HidGesture] Extra button force-released on disconnect")
+                        try:
+                            cb()
+                        except Exception:
+                            pass
             self._gesture_cid = DEFAULT_GESTURE_CID
             self._gesture_candidates = list(DEFAULT_GESTURE_CIDS)
             self._rawxy_enabled = False

@@ -199,23 +199,41 @@ if sys.platform == "win32":
 
     def inject_mouse_down(action_id):
         """Inject a mouse button press for the given mouse-button action."""
-        entry = _MOUSE_BUTTON_MAP.get(action_id)
-        if not entry:
-            return
-        down_flag, _, mouse_data = entry
-        inp = _make_mouse_input(down_flag, mouse_data)
-        arr = (INPUT * 1)(inp)
-        SendInput(1, arr, sizeof(INPUT))
+        try:
+            entry = _MOUSE_BUTTON_MAP.get(action_id)
+            if not entry:
+                print(f"[KeySimulator] inject_mouse_down: unknown action '{action_id}'")
+                return
+            down_flag, _, mouse_data = entry
+            print(f"[KeySimulator] inject_mouse_down({action_id}) flags=0x{down_flag:04X} mouseData=0x{mouse_data:04X}")
+            inp = _make_mouse_input(down_flag, mouse_data)
+            arr = (INPUT * 1)(inp)
+            result = SendInput(1, arr, sizeof(INPUT))
+            if result == 0:
+                err = ctypes.get_last_error() if hasattr(ctypes, 'get_last_error') else 'N/A'
+                print(f"[KeySimulator] inject_mouse_down: SendInput returned 0! error={err}")
+        except Exception as exc:
+            print(f"[KeySimulator] inject_mouse_down EXCEPTION: {exc}")
+            import traceback; traceback.print_exc()
 
     def inject_mouse_up(action_id):
         """Inject a mouse button release for the given mouse-button action."""
-        entry = _MOUSE_BUTTON_MAP.get(action_id)
-        if not entry:
-            return
-        _, up_flag, mouse_data = entry
-        inp = _make_mouse_input(up_flag, mouse_data)
-        arr = (INPUT * 1)(inp)
-        SendInput(1, arr, sizeof(INPUT))
+        try:
+            entry = _MOUSE_BUTTON_MAP.get(action_id)
+            if not entry:
+                print(f"[KeySimulator] inject_mouse_up: unknown action '{action_id}'")
+                return
+            _, up_flag, mouse_data = entry
+            print(f"[KeySimulator] inject_mouse_up({action_id}) flags=0x{up_flag:04X} mouseData=0x{mouse_data:04X}")
+            inp = _make_mouse_input(up_flag, mouse_data)
+            arr = (INPUT * 1)(inp)
+            result = SendInput(1, arr, sizeof(INPUT))
+            if result == 0:
+                err = ctypes.get_last_error() if hasattr(ctypes, 'get_last_error') else 'N/A'
+                print(f"[KeySimulator] inject_mouse_up: SendInput returned 0! error={err}")
+        except Exception as exc:
+            print(f"[KeySimulator] inject_mouse_up EXCEPTION: {exc}")
+            import traceback; traceback.print_exc()
 
     def is_mouse_button_action(action_id):
         """Return True if the action simulates a mouse button."""
@@ -501,23 +519,30 @@ if sys.platform == "win32":
     }
 
     def execute_action(action_id):
-        if action_id.startswith("custom:"):
-            keys = _parse_custom_combo(action_id, _KEY_NAME_TO_CODE)
-            if keys:
-                send_key_combo(keys)
-            return
-        if is_mouse_button_action(action_id):
-            inject_mouse_down(action_id)
-            inject_mouse_up(action_id)
-            return
-        action = ACTIONS.get(action_id)
-        if not action or not action["keys"]:
-            return
-        arrow_vk = _BROWSER_NAV_ARROW.get(action_id)
-        if arrow_vk is not None:
-            _send_phased_alt_arrow(arrow_vk)
-        else:
-            send_key_combo(action["keys"])
+        try:
+            print(f"[KeySimulator] execute_action({action_id})")
+            if action_id.startswith("custom:"):
+                keys = _parse_custom_combo(action_id, _KEY_NAME_TO_CODE)
+                if keys:
+                    send_key_combo(keys)
+                return
+            if is_mouse_button_action(action_id):
+                print(f"[KeySimulator] execute_action: mouse click for {action_id}")
+                inject_mouse_down(action_id)
+                inject_mouse_up(action_id)
+                return
+            action = ACTIONS.get(action_id)
+            if not action or not action["keys"]:
+                print(f"[KeySimulator] execute_action: no keys for '{action_id}'")
+                return
+            arrow_vk = _BROWSER_NAV_ARROW.get(action_id)
+            if arrow_vk is not None:
+                _send_phased_alt_arrow(arrow_vk)
+            else:
+                send_key_combo(action["keys"])
+        except Exception as exc:
+            print(f"[KeySimulator] execute_action EXCEPTION: {exc}")
+            import traceback; traceback.print_exc()
 
 
 # ==================================================================

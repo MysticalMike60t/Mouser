@@ -51,6 +51,7 @@ class Engine:
             self.cfg.get("settings", {}).get("debug_mode", False)
         )
         self._battery_poll_stop = threading.Event()
+        self._mouse_release_timers = {}   # action_id → Timer for safety auto-release
         self._lock = threading.Lock()
         self.hook.set_debug_callback(self._emit_debug)
         self.hook.set_gesture_callback(self._emit_gesture_event)
@@ -94,6 +95,7 @@ class Engine:
 
         for btn_key, action_id in mappings.items():
             events = list(BUTTON_TO_EVENTS.get(btn_key, ()))
+            has_up = any(e.endswith("_up") for e in events)
 
             for evt_type in events:
                 if evt_type.endswith("_up"):
@@ -109,48 +111,90 @@ class Engine:
                     if "hscroll" in evt_type:
                         self.hook.register(evt_type, self._make_hscroll_handler(action_id))
                     elif is_mouse_button_action(action_id):
-                        self.hook.register(evt_type, self._make_mouse_down_handler(action_id))
+                        if has_up:
+                            # Button has a matching _up event → split press/release
+                            self.hook.register(evt_type, self._make_mouse_down_handler(action_id))
+                        else:
+                            # Single-fire event (gesture, swipe) → full click
+                            self.hook.register(evt_type, self._make_handler(action_id))
                     else:
                         self.hook.register(evt_type, self._make_handler(action_id))
 
     def _make_handler(self, action_id):
         def handler(event):
-            if self._enabled:
-                self._emit_debug(
-                    f"Mapped {event.event_type} -> {action_id} "
-                    f"({self._action_label(action_id)})"
-                )
-                if event.event_type.startswith("gesture_"):
-                    self._emit_gesture_event({
-                        "type": "mapped",
-                        "event_name": event.event_type,
-                        "action_id": action_id,
-                        "action_label": self._action_label(action_id),
-                    })
-                if action_id == "toggle_smart_shift":
-                    self._toggle_smart_shift()
-                elif action_id == "switch_scroll_mode":
-                    self._switch_scroll_mode()
-                else:
-                    execute_action(action_id)
+            try:
+                if self._enabled:
+                    print(f"[Engine] _make_handler fired: {event.event_type} -> {action_id}")
+                    self._emit_debug(
+                        f"Mapped {event.event_type} -> {action_id} "
+                        f"({self._action_label(action_id)})"
+                    )
+                    if event.event_type.startswith("gesture_"):
+                        self._emit_gesture_event({
+                            "type": "mapped",
+                            "event_name": event.event_type,
+                            "action_id": action_id,
+                            "action_label": self._action_label(action_id),
+                        })
+                    if action_id == "toggle_smart_shift":
+                        self._toggle_smart_shift()
+                    elif action_id == "switch_scroll_mode":
+                        self._switch_scroll_mode()
+                    else:
+                        execute_action(action_id)
+            except Exception as exc:
+                print(f"[Engine] _make_handler EXCEPTION for {action_id}: {exc}")
+                import traceback; traceback.print_exc()
         return handler
 
     def _make_mouse_down_handler(self, action_id):
+        def _safety_release():
+            """Auto-release if the UP event never fires."""
+            try:
+                print(f"[Engine] SAFETY RELEASE fired for {action_id} (UP never received)")
+                self._mouse_release_timers.pop(action_id, None)
+                inject_mouse_up(action_id)
+            except Exception as exc:
+                print(f"[Engine] _safety_release EXCEPTION for {action_id}: {exc}")
+                import traceback; traceback.print_exc()
+
         def handler(event):
-            if self._enabled:
-                self._emit_debug(
-                    f"Mapped {event.event_type} -> {action_id} (mouse down)"
-                )
-                inject_mouse_down(action_id)
+            try:
+                if self._enabled:
+                    print(f"[Engine] mouse_down_handler fired: {event.event_type} -> {action_id}")
+                    self._emit_debug(
+                        f"Mapped {event.event_type} -> {action_id} (mouse down)"
+                    )
+                    inject_mouse_down(action_id)
+                    # Safety: auto-release after 2s if UP event is never received
+                    old = self._mouse_release_timers.pop(action_id, None)
+                    if old is not None:
+                        old.cancel()
+                    t = threading.Timer(2.0, _safety_release)
+                    t.daemon = True
+                    self._mouse_release_timers[action_id] = t
+                    t.start()
+            except Exception as exc:
+                print(f"[Engine] mouse_down_handler EXCEPTION for {action_id}: {exc}")
+                import traceback; traceback.print_exc()
         return handler
 
     def _make_mouse_up_handler(self, action_id):
         def handler(event):
-            if self._enabled:
-                self._emit_debug(
-                    f"Mapped {event.event_type} -> {action_id} (mouse up)"
-                )
-                inject_mouse_up(action_id)
+            try:
+                if self._enabled:
+                    print(f"[Engine] mouse_up_handler fired: {event.event_type} -> {action_id}")
+                    self._emit_debug(
+                        f"Mapped {event.event_type} -> {action_id} (mouse up)"
+                    )
+                    # Cancel safety timer
+                    old = self._mouse_release_timers.pop(action_id, None)
+                    if old is not None:
+                        old.cancel()
+                    inject_mouse_up(action_id)
+            except Exception as exc:
+                print(f"[Engine] mouse_up_handler EXCEPTION for {action_id}: {exc}")
+                import traceback; traceback.print_exc()
         return handler
 
     def _toggle_smart_shift(self):

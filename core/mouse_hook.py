@@ -516,6 +516,19 @@ if sys.platform == "win32":
         }
 
         def _low_level_handler(self, nCode, wParam, lParam):
+            try:
+                return self._low_level_handler_inner(nCode, wParam, lParam)
+            except Exception as exc:
+                # CRITICAL: never let an exception escape the hook callback —
+                # Windows would silently uninstall the hook, killing all remapping.
+                try:
+                    print(f"[MouseHook] CRITICAL _low_level_handler EXCEPTION: {exc}")
+                    import traceback; traceback.print_exc()
+                except Exception:
+                    pass
+                return CallNextHookEx(self._hook, nCode, wParam, lParam)
+
+        def _low_level_handler_inner(self, nCode, wParam, lParam):
             if nCode == HC_ACTION:
                 data = lParam.contents
                 mouse_data = data.mouseData
