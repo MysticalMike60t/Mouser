@@ -110,9 +110,10 @@ class Engine:
 
         for btn_key, action_id in mappings.items():
             events = list(BUTTON_TO_EVENTS.get(btn_key, ()))
+            has_paired_down = any(e.endswith("_down") for e in events)
 
             for evt_type in events:
-                if evt_type.endswith("_up"):
+                if has_paired_down and evt_type.endswith("_up"):
                     if action_id != "none":
                         self.hook.block(evt_type)
                     continue
