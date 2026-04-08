@@ -476,6 +476,7 @@ FEAT_ADJ_DPI   = 0x2201      # Adjustable DPI
 FEAT_SMART_SHIFT          = 0x2110  # Smart Shift basic
 FEAT_SMART_SHIFT_ENHANCED = 0x2111  # Smart Shift Enhanced (MX Master 3/3S, MX Master 4)
 FEAT_UNIFIED_BATT   = 0x1004      # Unified Battery (preferred)
+FEAT_DEVICE_NAME    = 0x0005      # Device Name & Type
 FEAT_BATTERY_STATUS = 0x1000      # Battery Status (fallback)
 DEFAULT_GESTURE_CID = DEFAULT_GESTURE_CIDS[0]
 
@@ -814,6 +815,35 @@ class HidGestureListener:
             if p and p[0] != 0:
                 return p[0]
         return None
+
+    def _query_device_name(self):
+        """Query device name via HID++ feature 0x0005 (DEVICE_NAME_TYPE)."""
+        name_idx = self._find_feature(FEAT_DEVICE_NAME)
+        if name_idx is None:
+            return None
+        resp = self._request(name_idx, 0, [0x00] * 3)
+        if not resp:
+            return None
+        _, _, _, _, params = resp
+        name_len = params[0]
+        if name_len == 0:
+            return None
+        name_bytes = []
+        offset = 0
+        while offset < name_len:
+            resp = self._request(name_idx, 1, [offset, 0x00, 0x00])
+            if not resp:
+                break
+            _, _, _, _, chunk = resp
+            remaining = name_len - offset
+            name_bytes.extend(chunk[:remaining])
+            offset += len(chunk)
+            if len(chunk) == 0:
+                break
+        if not name_bytes:
+            return None
+        name = bytes(name_bytes).decode("ascii", errors="replace").strip("\x00").strip()
+        return name if name else None
 
     def _get_cid_reporting(self, cid):
         if self._feat_idx is None:
@@ -1447,6 +1477,7 @@ class HidGestureListener:
 
             # Try Bluetooth direct (0xFF) first, then Bolt receiver slots
             reprog_found = False
+            hidpp_name = None
             for idx in (0xFF, 1, 2, 3, 4, 5, 6):
                 self._dev_idx = idx
                 fi = self._find_feature(FEAT_REPROG_V4)
@@ -1455,6 +1486,18 @@ class HidGestureListener:
                     self._feat_idx = fi
                     print(f"[HidGesture] Found REPROG_V4 @0x{fi:02X}  "
                           f"PID=0x{pid:04X} devIdx=0x{idx:02X}")
+                    # Query actual device name via HID++ (resolves
+                    # USB receivers that report a generic PID/name).
+                    hidpp_name = self._query_device_name()
+                    if hidpp_name:
+                        print(f"[HidGesture] HID++ device name: '{hidpp_name}'")
+                        device_spec = resolve_device(
+                            product_id=pid, product_name=hidpp_name,
+                        ) or device_spec
+                        self._gesture_candidates = list(
+                            getattr(device_spec, "gesture_cids", ())
+                            or DEFAULT_GESTURE_CIDS
+                        )
                     controls = self._discover_reprog_controls()
                     self._last_controls = controls
                     self._gesture_candidates = self._choose_gesture_candidates(
@@ -1496,7 +1539,7 @@ class HidGestureListener:
                         self._divert_extras()
                         self._connected_device_info = build_connected_device_info(
                             product_id=pid,
-                            product_name=product,
+                            product_name=hidpp_name or product,
                             transport=open_info.get("transport") or transport,
                             source=source,
                             gesture_cids=self._gesture_candidates,
