@@ -4,7 +4,9 @@
 <img src=".github/assets/banner_en.png" alt="Mouser logo" />
 </p>
 
-<p><a href="README_CN.md">English</a> | <a href="README_CN.md">中文文档</a></p>
+<p align="center">
+<a href="README_CN.md">English</a> | <a href="README_CN.md">中文文档</a>
+</p>
 
 A lightweight, open-source alternative to **Logitech Options+** for
 remapping Logitech **HID++** mice. The current best experience is on the **MX Master**
