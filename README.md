@@ -17,7 +17,6 @@ family, with support for additional Logitech models.
 <hr />
 
 <div>
-<br/>
 <span>
 <p align="center">
 <strong>Sections</strong>
