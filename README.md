@@ -14,17 +14,17 @@ No telemetry data. No cloud integrations. No Logitech account connection require
 <img src="images/downloads.png" alt="Downloads Banner" />
 </p>
 <p align="center">
-  <a href="https://github.com/TomBadash/Mouser/releases/latest">
-    <img src="https://img.shields.io/github/downloads/TomBadash/Mouser/Mouser-Windows.zip?style=for-the-badge&color=00d4aa&logo=windows&label=Windows&displayAssetName=false" alt="Windows Downloads" />
-  </a>
-  <a href="https://github.com/TomBadash/Mouser/releases/latest">
-    <img src="https://img.shields.io/github/downloads/TomBadash/Mouser/Mouser-macOS.zip?style=for-the-badge&color=00d4aa&logo=apple&label=macOS%20Apple%20Silicon&displayAssetName=false" alt="macOS Apple Silicon Downloads" />
-  </a>
-  <a href="https://github.com/TomBadash/Mouser/releases/latest">
-    <img src="https://img.shields.io/github/downloads/TomBadash/Mouser/Mouser-Linux.zip?style=for-the-badge&color=00d4aa&logo=linux&label=Linux&displayAssetName=false" alt="Linux Downloads" />
-  </a>
-  <br />
-  <img src="https://img.shields.io/github/downloads/TomBadash/Mouser/total?style=for-the-badge&color=00d4aa&label=Total%20(all%20versions)" alt="Downloads" />
+<a href="https://github.com/TomBadash/Mouser/releases/latest">
+<img src="https://img.shields.io/github/downloads/TomBadash/Mouser/Mouser-Windows.zip?style=for-the-badge&color=00d4aa&logo=windows&label=Windows&displayAssetName=false" alt="Windows Downloads" />
+</a>
+<a href="https://github.com/TomBadash/Mouser/releases/latest">
+<img src="https://img.shields.io/github/downloads/TomBadash/Mouser/Mouser-macOS.zip?style=for-the-badge&color=00d4aa&logo=apple&label=macOS%20Apple%20Silicon&displayAssetName=false" alt="macOS Apple Silicon Downloads" />
+</a>
+<a href="https://github.com/TomBadash/Mouser/releases/latest">
+<img src="https://img.shields.io/github/downloads/TomBadash/Mouser/Mouser-Linux.zip?style=for-the-badge&color=00d4aa&logo=linux&label=Linux&displayAssetName=false" alt="Linux Downloads" />
+</a>
+<br />
+<img src="https://img.shields.io/github/downloads/TomBadash/Mouser/total?style=for-the-badge&color=00d4aa&label=Total%20(all%20versions)" alt="Downloads" />
 </p>
 
 <hr />
