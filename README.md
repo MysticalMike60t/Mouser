@@ -103,7 +103,7 @@ No telemetry data. No cloud integrations. No Logitech account connection require
 </tr>
 <th>Multi-Language UI</th>
 <tr>
-<td><b>English</b> / <b>Simplified Chinese</b> / <b>Traditional Chinese</b></td>
+<td><i>English</i> / <i>Simplified Chinese</i> / <i>Traditional Chinese</i></td>
 <td>switch instantly in-app, no restart required</td>
 </tr>
 <tr>
