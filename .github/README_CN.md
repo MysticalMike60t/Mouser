@@ -5,7 +5,7 @@
 </p></span>
 </div>
 <p align="center">
-<img src=".github/assets/banner_sc.png" alt="Mouser logo" />
+<img src=".github/assets/banner_en.png" alt="Mouser logo" />
 </p>
 <p>
 一款轻量级、开源的 <a href="https://www.logitech.com/en-us/software/logi-options-plus">Logitech Options+</a> 替代方案，
@@ -24,6 +24,9 @@
 <a href="#section-installation">安装</a> |
 <a href="#section-build-from-source">从源码构建</a> |
 <a href="#section-device-coverage">设备覆盖</a> |
+<a href="#section-features">功能</a> |
+<a href="#section-default-mappings">默认映射</a> |
+<a href="#section-actions">可用操作</a> |
 <a href="#section-contributing">参与贡献</a> |
 <a href="#section-support">支持项目</a> |
 <a href="#section-acknowledgments">致谢</a>
@@ -34,7 +37,7 @@
 <hr />
 
 <p align="center" id="section-downloads">
-<img src=".github/assets/downloads_banner_sc.png" alt="下载横幅" />
+<img src=".github/assets/downloads_banner_en.png" alt="下载横幅" />
 </p>
 <p align="center">
 <a href="https://github.com/TomBadash/Mouser/releases/latest">
@@ -53,7 +56,7 @@
 <hr />
 <!-- Screenshots -->
 <p align="center" id="section-screenshots">
-<img src=".github/assets/screenshots_banner_sc.png" alt="截图横幅" />
+<img src=".github/assets/screenshots_banner_en.png" alt="截图横幅" />
 </p>
 
 <p align="center">
@@ -72,12 +75,12 @@
 
 <div>
 <p align="center" id="section-installation">
-<img src=".github/assets/installation_banner_sc.png" alt="安装横幅" />
+<img src=".github/assets/installation_banner_en.png" alt="安装横幅" />
 </p>
 
 1. 前往 [**最新发布页**](https://github.com/TomBadash/Mouser/releases/latest)
 2. 下载对应平台的压缩包：**Mouser-Windows.zip**、**Mouser-macOS.zip**（Apple Silicon）、**Mouser-macOS-intel.zip**（Intel macOS）或 **Mouser-Linux.zip**
-3. 将压缩包**解压**到任意文件夹（桌面、文档,或任何你喜欢的位置)
+3. 将压缩包**解压**到任意文件夹（桌面、文档，或任何你喜欢的位置）
 4. **运行**可执行文件：`Mouser.exe`（Windows）、`Mouser.app`（macOS）或 `./Mouser`（Linux）
 
 就这样。应用会打开并立即开始重新映射你的鼠标按键。
@@ -104,7 +107,7 @@
 
 <div id="section-building-from-source">
 <p align="center">
-<img src=".github/assets/building-from-source_banner_sc.png" alt="从源码构建横幅" />
+<img src=".github/assets/building-from-source_banner_en.png" alt="从源码构建横幅" />
 </p>
 
 `.python-version` 文件指定了与项目源代码交互时使用的 _python_ 版本。这与 `pyproject.toml` 中指定的版本是分开的，因为 `requires-python=">=3.10"` 适用于包和其他所有内容。这确保了兼容性，同时保持开发环境的更新。
@@ -118,6 +121,9 @@
 - **仅限 macOS：** 需要辅助功能权限（系统设置 → 隐私与安全性 → 辅助功能）
 - **仅限 Linux：** `xdotool` 在 X11 上启用按应用切换配置；`kdotool` 额外启用 KDE Wayland 检测
 - **仅限 Linux：** 重新映射需要对 `/dev/input/event*` 的读取权限和对 `/dev/uinput` 的写入权限（你可能需要将用户添加到 `input` 组）
+
+<details>
+<summary>Windows</summary>
 
 ### Windows
 
@@ -152,7 +158,7 @@ Mouser.bat
 # 双击 Mouser.lnk
 ```
 
-> **提示：** 要在没有控制台窗口的情况下运行,请使用 `pythonw.exe main_qml.py` 或 `.lnk` 快捷方式。
+> **提示：** 要在没有控制台窗口的情况下运行，请使用 `pythonw.exe main_qml.py` 或 `.lnk` 快捷方式。
 > 在 macOS 上，`--start-hidden` 是与在后台直接启动 Mouser 时相同的托盘优先启动路径。登录项使用你保存的启动设置。
 
 用于调试的临时 macOS 传输覆盖：
@@ -196,6 +202,11 @@ pyinstaller Mouser.spec --noconfirm
 ```
 
 输出位于 `dist\Mouser\`。压缩整个文件夹即可分发。如果无法导入 `hidapi`，`build.bat` 会提前失败，这可以避免生成无法检测罗技设备的打包应用。
+
+</details>
+
+<details>
+<summary>macOS</summary>
 
 ### macOS
 
@@ -246,6 +257,11 @@ pip install pyinstaller
 
 输出是 `dist/Mouser.app`。脚本在存在时优先使用 `images/AppIcon.icns`，否则从 `images/logo_icon.png` 生成 `.icns` 图标，然后使用 `codesign --sign -` 对应用包进行临时签名。
 
+</details>
+
+<details>
+<summary>Linux</summary>
+
 ### Linux
 
 ```bash
@@ -280,12 +296,14 @@ pyinstaller Mouser-linux.spec --noconfirm
 
 > **自动化发布：** 推送 `v*` 标签会触发[发布工作流](.github/workflows/release.yml)，它会在 CI 中构建所有三个平台并将它们作为 GitHub Release 资产发布。
 
+</details>
+
 </div>
 
 <hr />
 
 <p align="center" id="section-device-coverage">
-<img src=".github/assets/device-coverage_banner_sc.png" alt="设备覆盖横幅" />
+<img src=".github/assets/device-coverage_banner_en.png" alt="设备覆盖横幅" />
 </p>
 
 <table align="center">
@@ -320,10 +338,8 @@ pyinstaller Mouser-linux.spec --noconfirm
 
 <hr />
 
-<details>
-<summary>功能、默认映射和可用操作</summary>
 <p align="center" id="section-features">
-<img src=".github/assets/features_banner_sc.png" alt="功能横幅" />
+<img src=".github/assets/features_banner_en.png" alt="功能横幅" />
 </p>
 
 <table align="center">
@@ -397,7 +413,7 @@ pyinstaller Mouser-linux.spec --noconfirm
 </tr>
 <tr>
 <td><i>设备感知 UI</i></td>
-<td>可交互的 MX Master 图表,带可点击的热区；其他型号使用通用回退</td>
+<td>可交互的 MX Master 图表，带可点击的热区；其他型号使用通用回退</td>
 </tr>
 <tr>
 <th>多语言 UI</th>
@@ -434,7 +450,7 @@ pyinstaller Mouser-linux.spec --noconfirm
 <hr />
 
 <p align="center" id="section-default-mappings">
-<img src=".github/assets/default-mappings_banner_sc.png" alt="默认映射横幅" />
+<img src=".github/assets/default-mappings_banner_en.png" alt="默认映射横幅" />
 </p>
 
 <table align="center">
@@ -475,7 +491,7 @@ pyinstaller Mouser-linux.spec --noconfirm
 <hr />
 
 <p align="center" id="section-actions">
-<img src=".github/assets/actions_banner_sc.png" alt="可用操作横幅" />
+<img src=".github/assets/actions_banner_en.png" alt="可用操作横幅" />
 </p>
 
 操作标签按平台自适应。例如，Windows 提供 `Win+D` 和 `任务视图`，而 macOS 提供 `调度中心`、`显示桌面`、`应用程序窗口` 和 `启动台`。
@@ -510,18 +526,17 @@ pyinstaller Mouser-linux.spec --noconfirm
 <td>不执行操作（透传）</td>
 </tr>
 </table>
-</details>
 
 <hr />
 
 <p align="center" id="section-contributing">
-<img src=".github/assets/contributing_banner_sc.png" alt="参与贡献横幅" />
+<img src=".github/assets/contributing_banner_en.png" alt="参与贡献横幅" />
 </p>
 
 欢迎贡献！开始步骤：
 
 1. Fork 仓库并创建功能分支
-2. 设置开发环境（请参阅[构建章节](#building-section)）
+2. 设置开发环境（请参阅[构建章节](#section-building-from-source)）
 3. 进行你的修改，并用受支持的罗技 _HID++_ 鼠标测试（目前首选 MX Master 系列）
 4. 提交带有清晰描述的 pull request
 
@@ -535,7 +550,7 @@ pyinstaller Mouser-linux.spec --noconfirm
 <hr />
 
 <p align="center" id="section-support">
-<img src=".github/assets/support_banner_sc.png" alt="支持横幅" />
+<img src=".github/assets/support_banner_en.png" alt="支持横幅" />
 </p>
 
 <p align="center">
@@ -548,12 +563,12 @@ pyinstaller Mouser-linux.spec --noconfirm
   </a>
 </p>
 
-<p align="center">每一份支持都有助于项目持续推进——感谢你!</p>
+<p align="center">每一份支持都有助于项目持续推进——感谢你！</p>
 
 <hr />
 
 <p align="center" id="section-acknowledgments">
-<img src=".github/assets/acknowledgments_banner_sc.png" alt="致谢横幅" />
+<img src=".github/assets/acknowledgments_banner_en.png" alt="致谢横幅" />
 </p>
 
 - **[@andrew-sz](https://github.com/andrew-sz)** — macOS 移植：CGEventTap 鼠标钩子、Quartz 按键模拟、NSWorkspace 应用检测和 NSEvent 媒体键支持
@@ -562,7 +577,7 @@ pyinstaller Mouser-linux.spec --noconfirm
 - **[@hieshima](https://github.com/hieshima)** — Linux 支持（evdev + HID++ + uinput）、模式切换按键映射、Smart Shift 开关和自定义键盘快捷键支持；Linux 连接状态稳定化（evdev/HID++ 拆分就绪、重连时 HID 设置重放）；macOS CGEventTap 可靠性（超时自动重新启用、触控板滚动过滤）
 - **[@pavelzaichyk](https://github.com/pavelzaichyk)** — 下一个标签页和上一个标签页浏览器操作、持久化滚动日志文件存储、Smart Shift 增强支持（HID++ 0x2111）带灵敏度控制和滚动模式同步
 - **[@nellwhoami](https://github.com/nellwhoami)** — 多语言 UI 系统（英文、简体中文、繁体中文）以及 Page Up/Down/Home/End 导航操作
-- **[@guilamu](https://github.com/guilamu)** — 鼠标到鼠标按键重新映射（左键、右键、中键、后退、前进点击）、HID++ 稳定性修复（卡键自动释放、连续超时后自动重连、Windows 钩子的异步分发队列)
+- **[@guilamu](https://github.com/guilamu)** — 鼠标到鼠标按键重新映射（左键、右键、中键、后退、前进点击）、HID++ 稳定性修复（卡键自动释放、连续超时后自动重连、Windows 钩子的异步分发队列）
 
 <hr />
 

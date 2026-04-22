@@ -1,9 +1,9 @@
-[build-system]
-requires = ["setuptools>=64", "setuptools-scm>=8"]
-build-backend = "setuptools.build_meta"
+# [build-system]
+# requires = ["setuptools>=64", "setuptools-scm>=8"]
+# build-backend = "setuptools.build_meta"
 
 [project]
-name = "Mouser"
+name = "mouser"
 description = "A lightweight, open-source alternative to Logitech Options+ for remapping Logitech HID++ mice. The current best experience is on the MX Master family, with support for additional Logitech models."
 readme = "README.md"
 license-files = ["LICEN[CS]E*"]
@@ -34,5 +34,10 @@ Repository = "https://github.com/TomBadash/Mouser.git"
 Issues = "https://github.com/TomBadash/Mouser/issues"
 Changelog = "https://github.com/TomBadash/Mouser/blob/master/CHANGELOG.md"
 
-[project.gui-scripts]
-mouser = "mouser:main_qml"
+[tool.setuptools]
+py-modules = ["main_qml"]
+packages = ["core", "ui"]
+
+# python -m pip install --editable .
+[project.scripts]
+mouser = "main_qml:main"
