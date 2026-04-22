@@ -5,7 +5,7 @@
 </p></span>
 </div>
 <p align="center">
-<img src=".github/assets/banner_en.png" alt="Mouser logo" />
+<img src=".github/assets/banner_sc.png" alt="Mouser logo" />
 </p>
 <p>
 一款轻量级、开源的 <a href="https://www.logitech.com/en-us/software/logi-options-plus">Logitech Options+</a> 替代方案，
@@ -37,7 +37,7 @@
 <hr />
 
 <p align="center" id="section-downloads">
-<img src=".github/assets/downloads_banner_en.png" alt="下载横幅" />
+<img src=".github/assets/downloads_banner_sc.png" alt="下载横幅" />
 </p>
 <p align="center">
 <a href="https://github.com/TomBadash/Mouser/releases/latest">
@@ -56,7 +56,7 @@
 <hr />
 <!-- Screenshots -->
 <p align="center" id="section-screenshots">
-<img src=".github/assets/screenshots_banner_en.png" alt="截图横幅" />
+<img src=".github/assets/screenshots_banner_sc.png" alt="截图横幅" />
 </p>
 
 <p align="center">
@@ -75,7 +75,7 @@
 
 <div>
 <p align="center" id="section-installation">
-<img src=".github/assets/installation_banner_en.png" alt="安装横幅" />
+<img src=".github/assets/installation_banner_sc.png" alt="安装横幅" />
 </p>
 
 1. 前往 [**最新发布页**](https://github.com/TomBadash/Mouser/releases/latest)
@@ -107,7 +107,7 @@
 
 <div id="section-building-from-source">
 <p align="center">
-<img src=".github/assets/building-from-source_banner_en.png" alt="从源码构建横幅" />
+<img src=".github/assets/building-from-source_banner_sc.png" alt="从源码构建横幅" />
 </p>
 
 `.python-version` 文件指定了与项目源代码交互时使用的 _python_ 版本。这与 `pyproject.toml` 中指定的版本是分开的，因为 `requires-python=">=3.10"` 适用于包和其他所有内容。这确保了兼容性，同时保持开发环境的更新。
@@ -303,7 +303,7 @@ pyinstaller Mouser-linux.spec --noconfirm
 <hr />
 
 <p align="center" id="section-device-coverage">
-<img src=".github/assets/device-coverage_banner_en.png" alt="设备覆盖横幅" />
+<img src=".github/assets/device-coverage_banner_sc.png" alt="设备覆盖横幅" />
 </p>
 
 <table align="center">
@@ -339,7 +339,7 @@ pyinstaller Mouser-linux.spec --noconfirm
 <hr />
 
 <p align="center" id="section-features">
-<img src=".github/assets/features_banner_en.png" alt="功能横幅" />
+<img src=".github/assets/features_banner_sc.png" alt="功能横幅" />
 </p>
 
 <table align="center">
@@ -450,7 +450,7 @@ pyinstaller Mouser-linux.spec --noconfirm
 <hr />
 
 <p align="center" id="section-default-mappings">
-<img src=".github/assets/default-mappings_banner_en.png" alt="默认映射横幅" />
+<img src=".github/assets/default-mappings_banner_sc.png" alt="默认映射横幅" />
 </p>
 
 <table align="center">
@@ -491,7 +491,7 @@ pyinstaller Mouser-linux.spec --noconfirm
 <hr />
 
 <p align="center" id="section-actions">
-<img src=".github/assets/actions_banner_en.png" alt="可用操作横幅" />
+<img src=".github/assets/actions_banner_sc.png" alt="可用操作横幅" />
 </p>
 
 操作标签按平台自适应。例如，Windows 提供 `Win+D` 和 `任务视图`，而 macOS 提供 `调度中心`、`显示桌面`、`应用程序窗口` 和 `启动台`。
@@ -530,7 +530,7 @@ pyinstaller Mouser-linux.spec --noconfirm
 <hr />
 
 <p align="center" id="section-contributing">
-<img src=".github/assets/contributing_banner_en.png" alt="参与贡献横幅" />
+<img src=".github/assets/contributing_banner_sc.png" alt="参与贡献横幅" />
 </p>
 
 欢迎贡献！开始步骤：
@@ -550,7 +550,7 @@ pyinstaller Mouser-linux.spec --noconfirm
 <hr />
 
 <p align="center" id="section-support">
-<img src=".github/assets/support_banner_en.png" alt="支持横幅" />
+<img src=".github/assets/support_banner_sc.png" alt="支持横幅" />
 </p>
 
 <p align="center">
@@ -568,7 +568,7 @@ pyinstaller Mouser-linux.spec --noconfirm
 <hr />
 
 <p align="center" id="section-acknowledgments">
-<img src=".github/assets/acknowledgments_banner_en.png" alt="致谢横幅" />
+<img src=".github/assets/acknowledgments_banner_sc.png" alt="致谢横幅" />
 </p>
 
 - **[@andrew-sz](https://github.com/andrew-sz)** — macOS 移植：CGEventTap 鼠标钩子、Quartz 按键模拟、NSWorkspace 应用检测和 NSEvent 媒体键支持
